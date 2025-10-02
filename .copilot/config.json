@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "ignore": [
+    "dist/**",
+    "build/**",
+    "node_modules/**",
+    "coverage/**",
+    "*.log",
+    "*.env"
+  ],
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "server/**/*.ts",
+    "components/**/*.tsx"
+  ],
+  "languages": {
+    "javascript": {
+      "suggestions": true,
+      "tests": false
+    },
+    "typescript": {
+      "suggestions": true,
+      "tests": true
+    },
+    "python": {
+      "suggestions": false
+    }
+  },
+  "rules": {
+    "comments": "prefer english",
+    "style": "use functional components with hooks in React"
+  }
+}

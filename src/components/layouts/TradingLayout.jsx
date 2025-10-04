@@ -22,14 +22,6 @@ function TradingLayout() {
     return () => clearTimeout(timer);
   }, []);
 
-  // if (isLoading) {
-  //   return (
-  //     <div className="min-h-screen flex items-center justify-center bg-slate-900">
-  //       <ThunderLoader className="w-40 h-40" variant={"electric"} fillDuration={3} animate='thunder' />
-  //     </div>
-  //   );
-  // }
-
   return (
     <div className="min-h-screen text-slate-100 relative">
       <TradingHeader symbol={currentSymbol} showGlow={true} change={priceChange} changePercent={priceChangePercent} price={currentPrice} />

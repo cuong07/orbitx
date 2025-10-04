@@ -20,7 +20,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { cn } from "@/lib/utils";
 import { useTradingStore } from "@/stores/useTradingStore";
 import { ArrowDownRight, ArrowUpRight, X } from "lucide-react";
 import * as React from "react";
@@ -28,75 +27,66 @@ import { SharePositionModal } from "./SharePositionModal";
 
 
 export default function PositionsTable() {
-  const { positions, calculateOrderPnL, currentPrice, closePosition, orders, openOrders } = useTradingStore();
+  const { positions, calculateOrderPnL, currentPrice, closePosition } = useTradingStore();
 
-  const fmtPrice = React.useMemo(
-    () => new Intl.NumberFormat(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-    []
-  );
-  const fmtQty = React.useMemo(
-    () => new Intl.NumberFormat(undefined, { maximumFractionDigits: 4 }),
-    []
-  );
+  const formatPrice = (value) => value.toFixed(2);
+  const formatQty = (value) => value.toFixed(4);
 
-
-  const filled = React.useMemo(() => positions.filter((p) => p.status === "FILLED"), [positions]);
-  // console.log(positions);
-  // console.log(orders[0]);
-
-
+  const filledPositions = positions.filter(p => p.status === "FILLED");
 
   return (
-    <div className="mt-3">
-      <Table aria-label="Open positions" className="w-full table-fixed">
-        <TableCaption className="sr-only">List of currently open (filled) positions and their live PnL.</TableCaption>
-        <TableHeader className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-          <TableRow className="border-b border-border/60">
-            <TableHead className="px-3 py-2 text-left text-muted-foreground w-[7.5rem]">Symbol</TableHead>
-            <TableHead className="px-3 py-2 text-right text-muted-foreground w-[5.5rem]">Side</TableHead>
-            <TableHead className="px-3 py-2 text-right text-muted-foreground w-[6rem]">Qty</TableHead>
-            <TableHead className="px-3 py-2 text-right text-muted-foreground w-[7rem]">Entry</TableHead>
-            <TableHead className="px-3 py-2 text-right text-muted-foreground w-[8rem]">Current</TableHead>
-            <TableHead className="px-3 py-2 text-right text-muted-foreground w-[10rem]">PnL</TableHead>
-            <TableHead className="px-3 py-2 text-center text-muted-foreground w-[6rem]">Actions</TableHead>
+    <div className="mt-4">
+      <Table className="w-full">
+        <TableHeader>
+          <TableRow>
+            <TableHead>Symbol</TableHead>
+            <TableHead>Side</TableHead>
+            <TableHead>Quantity</TableHead>
+            <TableHead>Entry Price</TableHead>
+            <TableHead>Current Price</TableHead>
+            <TableHead>PnL</TableHead>
+            <TableHead>Actions</TableHead>
           </TableRow>
         </TableHeader>
-        <TableBody >
-          {filled.length === 0 ? (
-            <EmptyRow />
+        <TableBody>
+          {filledPositions.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                No open positions
+              </TableCell>
+            </TableRow>
           ) : (
-            filled.map((order, i) => {
-              const { pnl, pnlPercent } = calculateOrderPnL(order);
-              const pnlPositive = pnl >= 0;
+            filledPositions.map((position, index) => {
+              const { pnl, pnlPercent } = calculateOrderPnL(position);
+              const isProfit = pnl >= 0;
+
               return (
-                <TableRow
-                  key={`${order.symbol}-${i}`}
-                  className="border-t border-border/50 hover:bg-muted/40"
-                >
-                  <TableCell className="px-3 py-2 text-foreground whitespace-nowrap">{order.symbol}</TableCell>
-                  <TableCell className="px-3 py-2 text-right">
-                    <SideBadge side={order.side} />
+                <TableRow key={`${position.symbol}-${index}`}>
+                  <TableCell className="font-medium">{position.symbol}</TableCell>
+                  <TableCell>
+                    <SideBadge side={position.side} />
                   </TableCell>
-                  <TableCell className="px-3 py-2 text-right font-mono tabular-nums whitespace-nowrap">
-                    {fmtQty.format(order.quantity)}
+                  <TableCell className="font-mono">{formatQty(position.quantity)}</TableCell>
+                  <TableCell className="font-mono">${formatPrice(position.price)}</TableCell>
+                  <TableCell className="font-mono">${formatPrice(currentPrice)}</TableCell>
+                  <TableCell>
+                    <PnLDisplay value={pnl} percent={pnlPercent} isProfit={isProfit} />
                   </TableCell>
-                  <TableCell className="px-3 py-2 text-right font-mono tabular-nums whitespace-nowrap">
-                    {fmtPrice.format(order.price)}
-                  </TableCell>
-                  <TableCell className="px-3 py-2 text-right font-mono tabular-nums whitespace-nowrap">
-                    {fmtPrice.format(currentPrice)}
-                  </TableCell>
-                  <TableCell className="px-3 py-2 text-right font-mono tabular-nums whitespace-nowrap">
-                    <PnLChip value={pnl} percent={pnlPercent} positive={pnlPositive} />
-                  </TableCell>
-                  <TableCell className="px-3 py-2 text-center">
-                    <ClosePositionButton
-                      position={order}
-                      pnl={pnl}
-                      pnlPercent={pnlPercent}
-                      onClose={() => closePosition(order.id)}
-                    />
-                    <SharePositionModal leverage={1} entryPrice={order.price} markPrice={currentPrice} pnlPercent={pnlPercent} side={order.side} referralCode="212312313" />
+                  <TableCell>
+                    <div className="flex gap-2">
+                      <CloseButton
+                        position={position}
+                        onClose={() => closePosition(position.id)}
+                      />
+                      <SharePositionModal
+                        leverage={1}
+                        entryPrice={position.price}
+                        markPrice={currentPrice}
+                        pnlPercent={pnlPercent}
+                        side={position.side}
+                        referralCode="212312313"
+                      />
+                    </div>
                   </TableCell>
                 </TableRow>
               );
@@ -104,109 +94,47 @@ export default function PositionsTable() {
           )}
         </TableBody>
       </Table>
-
     </div>
   );
 }
 
 function SideBadge({ side }) {
-  const positive = side?.toUpperCase() === "BUY" || side?.toUpperCase() === "LONG";
+  const isLong = side?.toUpperCase() === "BUY" || side?.toUpperCase() === "LONG";
   return (
-    <Badge
-      variant={positive ? "secondary" : "destructive"}
-      className={cn(
-        "rounded-sm font-medium whitespace-nowrap",
-        positive ? "text-emerald-500 border-emerald-500/30 bg-emerald-500/10" : "text-red-500 border-red-500/30 bg-red-500/10"
-      )}
-    >
-      {positive ? "LONG" : "SHORT"}
+    <Badge variant={isLong ? "default" : "destructive"}>
+      {isLong ? "LONG" : "SHORT"}
     </Badge>
   );
 }
 
-function PnLChip({ value, percent, positive }) {
-  const fmt = new Intl.NumberFormat(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+function PnLDisplay({ value, percent, isProfit }) {
   return (
-    <div
-      className={cn(
-        "inline-flex items-center justify-end gap-1 rounded-md px-2 py-0.5 text-xs",
-        "ring-1",
-        positive
-          ? "text-emerald-400 ring-emerald-500/30 bg-emerald-500/5"
-          : "text-red-400 ring-red-500/30 bg-red-500/5"
-      )}
-    >
-      {positive ? (
-        <ArrowUpRight className="size-3.5" aria-hidden="true" />
-      ) : (
-        <ArrowDownRight className="size-3.5" aria-hidden="true" />
-      )}
-      <span className="tabular-nums">{fmt.format(value)} USDT</span>
-      <span className="opacity-70">(</span>
-      <span className="tabular-nums">{fmt.format(percent)}%</span>
-      <span className="opacity-70">)</span>
+    <div className={`flex items-center gap-1 text-sm ${isProfit ? 'text-green-600' : 'text-red-600'}`}>
+      {isProfit ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+      <span>${value.toFixed(2)}</span>
+      <span className="text-xs opacity-70">({percent.toFixed(2)}%)</span>
     </div>
   );
 }
 
-function ClosePositionButton({ position, pnl, pnlPercent, onClose }) {
-  const pnlPositive = pnl >= 0;
-  const fmtPrice = new Intl.NumberFormat(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
+function CloseButton({ position, onClose }) {
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-7 w-7 p-0 hover:bg-red-50 hover:border-red-200 hover:text-red-600"
-        >
-          <X className="h-3 w-3" />
+        <Button variant="outline" size="sm">
+          <X className="h-4 w-4" />
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Close Position</AlertDialogTitle>
-          <AlertDialogDescription className="space-y-2">
-            <div>Are you sure you want to close this position?</div>
-            <div className="bg-muted p-3 rounded-md space-y-1 text-sm">
-              <div className="flex justify-between">
-                <span>Symbol:</span>
-                <span className="font-medium">{position.symbol}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Side:</span>
-                <span className="font-medium">{position.side === 'BUY' ? 'LONG' : 'SHORT'}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Quantity:</span>
-                <span className="font-medium font-mono">{fmtPrice.format(position.quantity)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Entry Price:</span>
-                <span className="font-medium font-mono">${fmtPrice.format(position.price)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Current PnL:</span>
-                <span className={cn(
-                  "font-medium font-mono",
-                  pnlPositive ? "text-emerald-600" : "text-red-600"
-                )}>
-                  {pnlPositive ? '+' : ''}${fmtPrice.format(pnl)} ({pnlPositive ? '+' : ''}{fmtPrice.format(pnlPercent)}%)
-                </span>
-              </div>
-            </div>
-            <div className="text-xs text-muted-foreground">
-              This action will close the position at market price and realize the current PnL.
-            </div>
+          <AlertDialogDescription>
+            Are you sure you want to close {position.symbol} position?
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction
-            onClick={onClose}
-            className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
-          >
+          <AlertDialogAction onClick={onClose} className="bg-red-600 hover:bg-red-700">
             Close Position
           </AlertDialogAction>
         </AlertDialogFooter>
@@ -215,12 +143,3 @@ function ClosePositionButton({ position, pnl, pnlPercent, onClose }) {
   );
 }
 
-function EmptyRow() {
-  return (
-    <TableRow>
-      <TableCell colSpan={7} className="py-10 text-center text-sm text-muted-foreground">
-        No open positions yet.
-      </TableCell>
-    </TableRow>
-  );
-}

@@ -97,7 +97,7 @@ export function MarketList() {
 
 
   return (
-    <div className="flex h-full flex-col border-r  border-border bg-card">
+    <div className="flex h-full flex-col ">
       <div className="border-b border-border p-4">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />

@@ -39,10 +39,10 @@ export function TradingHeader({
   return (
     <div className="flex items-center justify-between border-b border-border bg-card px-6 py-4">
       <div className="flex items-center gap-8">
-        <div className="w-40">
+        {/* <div className="w-40">
           <Link to={"/"}>
             <img src="/2.png" alt="" /></Link>
-        </div>
+        </div> */}
         <div>
           <h1 className="text-xl font-semibold text-foreground">{symbol.toLocaleUpperCase()}</h1>
           <p className="text-xs text-muted-foreground">{symbol.slice(0, symbol.length - 4).toUpperCase()}/USDT</p>

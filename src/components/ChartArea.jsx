@@ -11,7 +11,7 @@ export function ChartArea({ children }) {
 
   return (
     <div className="flex h-fit w-full flex-col">
-      <div className="flex items-center justify-between border-b border-border px-4 py-2">
+      <div className="flex items-center justify-between border-b border-border">
         <Tabs defaultValue={timeframe} className="w-auto" onValueChange={(value) => {
           setTimeframe(value)
         }}>

@@ -39,20 +39,28 @@ export default function PositionsTable() {
       <Table className="w-full">
         <TableHeader>
           <TableRow>
-            <TableHead>Symbol</TableHead>
+            <TableHead>Pair</TableHead>
             <TableHead>Side</TableHead>
-            <TableHead>Quantity</TableHead>
+            <TableHead>Volume/Margin</TableHead>
+            <TableHead>Estimated P/L LP</TableHead>
             <TableHead>Entry Price</TableHead>
-            <TableHead>Current Price</TableHead>
-            <TableHead>PnL</TableHead>
-            <TableHead>Actions</TableHead>
+            <TableHead>Mark Price</TableHead>
+            <TableHead>Liquidation Price</TableHead>
+            <TableHead>Take Profit / Stop Loss</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {filledPositions.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                No open positions
+              <TableCell colSpan={8} className="text-center py-20">
+                <div className="flex flex-col items-center justify-center">
+                  <div className="w-16 h-16 mb-4 bg-gray-700 rounded-lg flex items-center justify-center">
+                    <svg className="w-8 h-8 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <p className="text-gray-500">No open positions</p>
+                </div>
               </TableCell>
             </TableRow>
           ) : (
@@ -62,16 +70,17 @@ export default function PositionsTable() {
 
               return (
                 <TableRow key={`${position.symbol}-${index}`}>
-                  <TableCell className="font-medium">{position.symbol}</TableCell>
+                  <TableCell className="font-medium">{position.symbol.toUpperCase()}</TableCell>
                   <TableCell>
                     <SideBadge side={position.side} />
                   </TableCell>
                   <TableCell className="font-mono">{formatQty(position.quantity)}</TableCell>
-                  <TableCell className="font-mono">${formatPrice(position.price)}</TableCell>
-                  <TableCell className="font-mono">${formatPrice(currentPrice)}</TableCell>
                   <TableCell>
                     <PnLDisplay value={pnl} percent={pnlPercent} isProfit={isProfit} />
                   </TableCell>
+                  <TableCell className="font-mono">${formatPrice(position.price)}</TableCell>
+                  <TableCell className="font-mono">${formatPrice(currentPrice)}</TableCell>
+                  <TableCell className="font-mono">-</TableCell>
                   <TableCell>
                     <div className="flex gap-2">
                       <CloseButton

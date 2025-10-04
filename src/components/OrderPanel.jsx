@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from "react"
+import React, { useCallback, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -7,55 +7,66 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useTradingStore } from "@/stores/useTradingStore"
 import { ORDER_SIDE, ORDER_TYPE } from "@/constants/enum"
 import { toast } from "sonner"
+import { useGoldPrice } from "@/hooks/useGoldPrice"
 
-export function OrderPanel() {
-  const { updateOrderForm, placeOrder, orderForm: { side, type, quantity, price } } = useTradingStore()
+// Constants
+const PERCENTAGE_BUTTONS = [25, 50, 75, 100];
 
-  const handlePlaceOrder = () => {
+export const OrderPanel = React.memo(() => {
+  const { updateOrderForm, placeOrder, orderForm: { side, type, quantity, price }, currentSymbol } = useTradingStore()
+  useGoldPrice(); // Initialize WebSocket connection for gold price
+
+  const handlePlaceOrder = useCallback(() => {
     try {
       if (placeOrder()) {
         toast.success('Đặt lệnh thành công')
       }
     } catch (error) {
-      console.log(error);
+      console.error("Error placing order:", error);
     }
-  }
+  }, [placeOrder]);
 
 
-  const [goldPrice, setGoldPrice] = useState(null);
+  const handleSideChange = useCallback((value) => {
+    updateOrderForm("side", value);
+  }, [updateOrderForm]);
 
-  useEffect(() => {
-    const ws = new WebSocket("wss://ws.okx.com:8443/ws/v5/public");
+  const handleTypeChange = useCallback((orderType) => {
+    updateOrderForm("type", orderType);
+  }, [updateOrderForm]);
 
-    ws.onopen = () => {
-      console.log("✅ Connected to OKX");
-      ws.send(
-        JSON.stringify({
-          op: "subscribe",
-          args: [{ channel: "tickers", instId: "XAUT-USDT" }],
-        })
-      );
-    };
+  const handlePriceChange = useCallback((e) => {
+    updateOrderForm("price", e.target.value);
+  }, [updateOrderForm]);
 
-    ws.onmessage = (event) => {
-      const res = JSON.parse(event.data);
-      if (res.arg?.instId === "XAUT-USD" && res.data?.length) {
-        setGoldPrice(res.data[0]);
-      }
-    };
+  const handleQuantityChange = useCallback((e) => {
+    updateOrderForm("quantity", e.target.value);
+  }, [updateOrderForm]);
 
-    ws.onerror = (err) => {
-      console.error("❌ WS error:", err);
-    };
-
-    return () => ws.close();
+  const handlePercentageClick = useCallback(() => {
+    // TODO: Implement percentage calculation based on available balance
+    // This will calculate the percentage of available balance and set the quantity
   }, []);
-  console.log(goldPrice);
+
+  // Memoize the percentage buttons to prevent recreation
+  const percentageButtons = useMemo(() =>
+    PERCENTAGE_BUTTONS.map((percent) => (
+      <Button
+        key={percent}
+        variant="outline"
+        size="sm"
+        className="flex-1 text-xs bg-transparent"
+        onClick={() => handlePercentageClick(percent)}
+      >
+        {percent}%
+      </Button>
+    )), [handlePercentageClick]
+  );
 
 
   return (
     <div className="flex h-fit flex-col border-l border-border bg-card">
-      <Tabs defaultValue={ORDER_SIDE[side]} className="flex-1 flex flex-col" onValueChange={(val) => updateOrderForm("side", val)}>
+      <Tabs defaultValue={ORDER_SIDE[side]} className="flex-1 flex flex-col" onValueChange={handleSideChange}>
         <TabsList className="grid w-full grid-cols-2 rounded-none border-b border-border bg-transparent p-0">
           <TabsTrigger
             value={ORDER_SIDE.BUY}
@@ -77,8 +88,7 @@ export function OrderPanel() {
               disabled
               variant={type === ORDER_TYPE.LIMIT ? "default" : "outline"}
               size="sm"
-              // onClick={() => setOrderType("limit")}
-              onClick={() => updateOrderForm("type", ORDER_TYPE.LIMIT)}
+              onClick={() => handleTypeChange(ORDER_TYPE.LIMIT)}
               className="flex-1"
             >
               Limit
@@ -86,8 +96,7 @@ export function OrderPanel() {
             <Button
               variant={type === ORDER_TYPE.MARKET ? "default" : "outline"}
               size="sm"
-              // onClick={() => setOrderType("market")}
-              onClick={() => updateOrderForm("type", ORDER_TYPE.MARKET)}
+              onClick={() => handleTypeChange(ORDER_TYPE.MARKET)}
               className="flex-1"
             >
               Market
@@ -106,7 +115,7 @@ export function OrderPanel() {
                     type="number"
                     placeholder="0.00"
                     value={price}
-                    onChange={(e) => updateOrderForm("price", e.target.value)}
+                    onChange={handlePriceChange}
                     className="pr-12 bg-secondary border-border font-mono"
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">USD</span>
@@ -124,7 +133,7 @@ export function OrderPanel() {
                   type="number"
                   placeholder="0.00"
                   value={quantity}
-                  onChange={(e) => updateOrderForm("quantity", e.target.value)}
+                  onChange={handleQuantityChange}
                   className="pr-12 bg-secondary border-border font-mono"
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">BTC</span>
@@ -132,11 +141,7 @@ export function OrderPanel() {
             </div>
 
             <div className="flex gap-2">
-              {[25, 50, 75, 100].map((percent) => (
-                <Button key={percent} variant="outline" size="sm" className="flex-1 text-xs bg-transparent">
-                  {percent}%
-                </Button>
-              ))}
+              {percentageButtons}
             </div>
 
             <div className="space-y-2 pt-2">
@@ -151,7 +156,7 @@ export function OrderPanel() {
             </div>
           </div>
 
-          <Button className="w-full bg-success hover:bg-success/90 text-success-foreground" onClick={handlePlaceOrder}>Buy BTC</Button>
+          <Button className="w-full cursor-pointer" onClick={handlePlaceOrder}>Buy {currentSymbol.toUpperCase()}</Button>
         </TabsContent>
 
         <TabsContent value={ORDER_SIDE.SELL} className="flex-1 mt-0 p-4 space-y-4">
@@ -160,7 +165,7 @@ export function OrderPanel() {
               disabled
               variant={type === ORDER_TYPE.LIMIT ? "default" : "outline"}
               size="sm"
-              onClick={() => updateOrderForm("type", ORDER_TYPE.LIMIT)}
+              onClick={() => handleTypeChange(ORDER_TYPE.LIMIT)}
               className="flex-1"
             >
               Limit
@@ -168,7 +173,7 @@ export function OrderPanel() {
             <Button
               variant={type === ORDER_TYPE.MARKET ? "default" : "outline"}
               size="sm"
-              onClick={() => updateOrderForm("type", ORDER_TYPE.MARKET)}
+              onClick={() => handleTypeChange(ORDER_TYPE.MARKET)}
               className="flex-1"
             >
               Market
@@ -187,7 +192,7 @@ export function OrderPanel() {
                     type="number"
                     placeholder="0.00"
                     value={price}
-                    onChange={(e) => updateOrderForm("price", e.target.value)}
+                    onChange={handlePriceChange}
                     className="pr-12 bg-secondary border-border font-mono"
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">USD</span>
@@ -205,7 +210,7 @@ export function OrderPanel() {
                   type="number"
                   placeholder="0.00"
                   value={quantity}
-                  onChange={(e) => updateOrderForm("quantity", e.target.value)}
+                  onChange={handleQuantityChange}
                   className="pr-12 bg-secondary border-border font-mono"
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">BTC</span>
@@ -213,11 +218,7 @@ export function OrderPanel() {
             </div>
 
             <div className="flex gap-2">
-              {[25, 50, 75, 100].map((percent) => (
-                <Button key={percent} variant="outline" size="sm" className="flex-1 text-xs bg-transparent">
-                  {percent}%
-                </Button>
-              ))}
+              {percentageButtons}
             </div>
 
             <div className="space-y-2 pt-2">
@@ -237,6 +238,6 @@ export function OrderPanel() {
           </Button>
         </TabsContent>
       </Tabs>
-    </div >
+    </div>
   )
-}
+})
